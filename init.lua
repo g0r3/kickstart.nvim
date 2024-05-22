@@ -450,6 +450,11 @@ require('lazy').setup({
     },
     opts = {
       notify_on_error = false,
+      function()
+        require('conform').formatters.black = {
+          prepend_args = { '--line-length 80' },
+        }
+      end,
       format_on_save = function(bufnr)
         -- Disable "format_on_save lsp_fallback" for languages that don't
         -- have a well standardized coding style. You can add additional
@@ -463,7 +468,7 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         -- Conform can also run multiple formatters sequentially
-        -- python = { "isort", "black" },
+        python = { 'black' },
         --
         -- You can use a sub-list to tell conform to run *until* a formatter
         -- is found.
