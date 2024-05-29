@@ -5,6 +5,8 @@ return {
   dependencies = { 'MunifTanjim/nui.nvim', 'nvim-lua/plenary.nvim' },
   opts = {},
   config = function()
-    require('hardtime').setup()
+    require('hardtime').setup {
+      disabled_filetypes = { 'neo-tree', 'lazy' },
+    }
   end,
 }
