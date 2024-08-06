@@ -42,7 +42,7 @@ return {
       -- online, please don't ask me how to install them :)
       ensure_installed = {
         -- Update this to ensure that you have the debuggers for the langs you want
-        'delve',
+        'debugpy',
       },
     }
 
@@ -55,7 +55,6 @@ return {
     vim.keymap.set('n', '<leader>B', function()
       dap.set_breakpoint(vim.fn.input 'Breakpoint condition: ')
     end, { desc = 'Debug: Set Breakpoint' })
-
     -- Dap UI setup
     -- For more information, see |:help nvim-dap-ui|
     dapui.setup {
@@ -65,15 +64,50 @@ return {
       icons = { expanded = '▾', collapsed = '▸', current_frame = '*' },
       controls = {
         icons = {
-          pause = '⏸',
-          play = '▶',
-          step_into = '⏎',
-          step_over = '⏭',
-          step_out = '⏮',
-          step_back = 'b',
-          run_last = '▶▶',
-          terminate = '⏹',
-          disconnect = '⏏',
+          disconnect = '',
+          pause = '',
+          play = '',
+          run_last = '',
+          step_back = '',
+          step_into = '',
+          step_out = '',
+          step_over = '',
+          terminate = '',
+        },
+      },
+      layouts = {
+        {
+          elements = {
+            {
+              id = 'scopes',
+              size = 0.25,
+            },
+            {
+              id = 'breakpoints',
+              size = 0.25,
+            },
+            {
+              id = 'stacks',
+              size = 0.25,
+            },
+            {
+              id = 'watches',
+              size = 0.25,
+            },
+          },
+          position = 'left',
+          size = 40,
+        },
+        {
+          elements = { {
+            id = 'console',
+            size = 0.9,
+          }, {
+            id = 'repl',
+            size = 0.1,
+          } },
+          position = 'right',
+          size = 0.5,
         },
       },
     }
@@ -81,6 +115,52 @@ return {
     -- Toggle to see last session result. Without this, you can't see session output in case of unhandled exception.
     vim.keymap.set('n', '<F7>', dapui.toggle, { desc = 'Debug: See last session result.' })
 
+    local cdw = vim.fn.getcwd()
+    print(cdw .. 'autotest/autotest-core/bin/entrypoint.sh')
+
     dap.listeners.after.event_initialized['dapui_config'] = dapui.open
+    dap.configurations.python = {
+      {
+        -- The first three options are required by nvim-dap
+        type = 'python', -- the type here established the link to the adapter definition: `dap.adapters.python`
+        request = 'launch',
+        subProcess = false, -- needed for the multiprocess library, since debugpy officially does not support multiple threads
+        name = 'Run testcase',
+        console = 'integratedTerminal',
+        program = cdw .. '/autotest/autotest-core/bin/entrypoint.py',
+        args = {
+          'docker-host=10.17.96.3',
+          'vm-power-off-after-run=False',
+          'reporters=log-summary,video-collector',
+          'case-retry-on-error=False',
+          'case-retry-on-fail=False',
+          'revert=after-run',
+          'cases=dummy_pass',
+          'profile=onprem-run',
+        },
+        env = {
+          BCC_USER = 'SVCENGNGSVNsync@protonmail.com',
+          BCC_PASS = '&Rk7ofWV4AJ#',
+          VNC_CLIENT = '/mnt/c/Program\\ Files/RealVNC/VNC\\ Viewer/vncviewer.exe {ip}:{port}',
+          PYTHONWARNINGS = 'ignore:Unverified HTTPS request',
+          REQUESTS_CA_BUNDLE = '/nix/store/wm5gsfan12qbgas2d9385fm42sg2v959-nss-cacert-3.89.1/etc/ssl/certs/ca-bundle.crt',
+          LD_LIBRARY_PATH = '/nix/store/bymsnmvi5zkbm84chkl0zsy7wf5vn944-autotest-core-env/lib',
+          PATH = '/nix/store/bymsnmvi5zkbm84chkl0zsy7wf5vn944-autotest-core-env/bin',
+        },
+        pythonPath = function()
+          -- debugpy supports launching an application with a different interpreter then the one used to launch debugpy itself.
+          -- The code below looks for a `venv` or `.venv` folder in the current directly and uses the python within.
+          -- You could adapt this - to for example use the `VIRTUAL_ENV` environment variable.
+          local cwd = vim.fn.getcwd()
+          if vim.fn.executable '/home/rstaudacher/.local/share/virtualenvs/fix-testruns/bin/python' == 1 then
+            return '/home/rstaudacher/.local/share/virtualenvs/fix-testruns/bin/python'
+          elseif vim.fn.executable(cwd .. '/.venv/bin/python') == 1 then
+            return cwd .. '/.venv/bin/python'
+          else
+            return '/usr/bin/python'
+          end
+        end,
+      },
+    }
   end,
 }
